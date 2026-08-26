@@ -30,14 +30,25 @@ function CourseCard({ profName, course }) {
             Rating
           </span>
           <span className="font-mono text-xl text-qc-grey">
-            {formatRating(course.rating)}
+            {course.rating != null ? formatRating(course.rating) : '—'}
           </span>
         </div>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-xs text-qc-grey/50">
-        <span>Last: {course.lastTerm}</span>
-        <span>{formatCount(course.totalEnrollments)} enrolled</span>
+        <div>
+          <span className="block font-mono text-[0.6rem] uppercase tracking-widest text-qc-grey/40">
+            Last Term
+          </span>
+          <span className="font-mono text-sm text-qc-grey">
+            {course.lastTerm}
+          </span>
+        </div>
+        <div>
+          <span className="block font-mono text-[0.6rem] uppercase tracking-widest text-qc-grey/40">
+            Total Enrolled
+          </span>
+          <span className="font-mono text-xl text-qc-grey">
+            {formatCount(course.totalEnrollments)}
+          </span>
+        </div>
       </div>
     </Link>
   )
