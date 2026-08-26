@@ -5,6 +5,8 @@ import StatTile from '../components/StatTile'
 import StatCard from '../components/StatCard'
 import TrendChart from '../components/TrendChart'
 import GradeBarChart from '../components/GradeBarChart'
+import ReviewFeed from '../components/ReviewFeed'
+import ReviewForm from '../components/ReviewForm'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 import { useSupabaseRpc } from '../hooks/useSupabaseRpc'
@@ -21,6 +23,7 @@ function CourseDashboard() {
   const [subject, ...rest] = course.split('-')
   const nbr = rest.join('-')
   const [selectedTerm, setSelectedTerm] = useState(null)
+  const [reviewsReloadKey, setReviewsReloadKey] = useState(0)
 
   const dashboard = useSupabaseRpc(
     'get_course_dashboard',
@@ -184,6 +187,25 @@ function CourseDashboard() {
             <div className="mt-4">
               <GradeBarChart grades={activeTerm} />
             </div>
+          </div>
+
+          <div className="mt-14">
+            <ReviewFeed
+              profName={name}
+              courseSubject={subject}
+              courseNbr={nbr}
+              reloadKey={reviewsReloadKey}
+            />
+          </div>
+
+          <div className="mt-8">
+            <ReviewForm
+              profName={name}
+              courseSubject={subject}
+              courseNbr={nbr}
+              validTerms={[...terms].map((t) => t.term).reverse()}
+              onSubmitted={() => setReviewsReloadKey((key) => key + 1)}
+            />
           </div>
         </div>
       </main>
