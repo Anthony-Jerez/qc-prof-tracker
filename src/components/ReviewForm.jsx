@@ -106,6 +106,16 @@ function ReviewForm({ profName, courseSubject, courseNbr, validTerms, onSubmitte
       return
     }
 
+    if (!title.trim()) {
+      setFormError('Please enter a title for your review.')
+      return
+    }
+
+    if (!comment.trim()) {
+      setFormError('Please enter a comment for your review.')
+      return
+    }
+
     setSubmitting(true)
     const { data, error } = await supabase
       .from('reviews')
