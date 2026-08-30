@@ -156,12 +156,15 @@ function ReviewForm({
     setSubmitting(false)
 
     if (error) {
-      setFormError(
-        error.code === UNIQUE_VIOLATION
-          ? 'You have already submitted a review for this course.'
-          : `Something went wrong ${isEditing ? 'updating' : 'submitting'} your review. Please try again.`,
-      )
-      return
+      if (error.code === UNIQUE_VIOLATION) {
+        setFormError('You have already submitted a review for this course.');
+      } else if (error.message) {
+        // Display custom trigger exception text
+        setFormError(error.message);
+      } else {
+        setFormError(`Something went wrong ${isEditing ? 'updating' : 'submitting'} your review. Please try again.`);
+      }
+      return;
     }
 
     if (isEditing) {
