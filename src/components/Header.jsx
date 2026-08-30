@@ -55,6 +55,13 @@ function Header() {
                   <p className="truncate px-2 py-1 text-xs text-qc-charcoal/50">
                     Signed in as {user.email}
                   </p>
+                  <Link
+                    to="/my-reviews"
+                    onClick={() => setOpen(false)}
+                    className="mt-1 block w-full rounded-lg px-2 py-2 text-left text-sm text-qc-charcoal transition-colors hover:bg-qc-charcoal/5 focus-visible:outline-none focus-visible:bg-qc-charcoal/5"
+                  >
+                    My Reviews
+                  </Link>
                   <button
                     type="button"
                     onClick={handleSignOut}
