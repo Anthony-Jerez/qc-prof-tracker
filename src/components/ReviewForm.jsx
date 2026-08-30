@@ -50,12 +50,21 @@ const fieldLabelClass =
 const fieldInputClass =
   'rounded-lg border border-qc-charcoal/15 bg-white px-3 py-2.5 text-sm text-qc-charcoal placeholder:text-qc-charcoal/30 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-qc-red'
 
-function ReviewForm({ profName, courseSubject, courseNbr, validTerms, onSubmitted }) {
+function ReviewForm({
+  profName,
+  courseSubject,
+  courseNbr,
+  validTerms,
+  existingReview,
+  onSubmitted,
+  onCancel,
+}) {
   const { user } = useAuth()
-  const [rating, setRating] = useState(0)
-  const [title, setTitle] = useState('')
-  const [comment, setComment] = useState('')
-  const [term, setTerm] = useState(validTerms[0] ?? '')
+  const isEditing = Boolean(existingReview)
+  const [rating, setRating] = useState(existingReview?.rating ?? 0)
+  const [title, setTitle] = useState(existingReview?.title ?? '')
+  const [comment, setComment] = useState(existingReview?.comment ?? '')
+  const [term, setTerm] = useState(existingReview?.term ?? validTerms[0] ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -117,28 +126,47 @@ function ReviewForm({ profName, courseSubject, courseNbr, validTerms, onSubmitte
     }
 
     setSubmitting(true)
-    const { data, error } = await supabase
-      .from('reviews')
-      .insert({
-        prof_name: profName,
-        course_subject: courseSubject,
-        course_nbr: courseNbr,
-        rating,
-        title: title.trim(),
-        comment: comment.trim(),
-        term,
-        user_id: user.id,
-      })
-      .select()
-      .single()
+
+    const payload = {
+      rating,
+      title: title.trim(),
+      comment: comment.trim(),
+      term,
+    }
+
+    const { data, error } = isEditing
+      ? await supabase
+          .from('reviews')
+          .update(payload)
+          .eq('id', existingReview.id)
+          .select()
+          .single()
+      : await supabase
+          .from('reviews')
+          .insert({
+            ...payload,
+            prof_name: profName,
+            course_subject: courseSubject,
+            course_nbr: courseNbr,
+            user_id: user.id,
+          })
+          .select()
+          .single()
+
     setSubmitting(false)
 
     if (error) {
       setFormError(
         error.code === UNIQUE_VIOLATION
           ? 'You have already submitted a review for this course.'
-          : 'Something went wrong submitting your review. Please try again.',
+          : `Something went wrong ${isEditing ? 'updating' : 'submitting'} your review. Please try again.`,
       )
+      return
+    }
+
+    if (isEditing) {
+      onSubmitted?.(data)
+      onCancel?.()
       return
     }
 
@@ -148,7 +176,7 @@ function ReviewForm({ profName, courseSubject, courseNbr, validTerms, onSubmitte
 
   return (
     <div className="rounded-2xl border border-qc-charcoal/10 bg-white p-6 shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-8">
-      <span className={fieldLabelClass}>Leave a review</span>
+      <span className={fieldLabelClass}>{isEditing ? 'Edit your review' : 'Leave a review'}</span>
       <h3 className="mt-2 font-display text-xl font-medium tracking-[-0.03em] text-qc-charcoal">
         {courseSubject} {courseNbr} with {profName}
       </h3>
@@ -216,13 +244,31 @@ function ReviewForm({ profName, courseSubject, courseNbr, validTerms, onSubmitte
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="self-start rounded-lg bg-qc-red px-5 py-2.5 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red/40 disabled:opacity-50"
-        >
-          {submitting ? 'Posting…' : 'Post Review'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="self-start rounded-lg bg-qc-red px-5 py-2.5 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red/40 disabled:opacity-50"
+          >
+            {submitting
+              ? isEditing
+                ? 'Updating…'
+                : 'Posting…'
+              : isEditing
+                ? 'Update Review'
+                : 'Post Review'}
+          </button>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={submitting}
+              className="rounded-lg border border-qc-charcoal/15 px-5 py-2.5 font-mono text-sm font-medium text-qc-charcoal transition-colors hover:border-qc-red/40 hover:text-qc-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
     </div>
   )

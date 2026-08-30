@@ -88,6 +88,7 @@ function CourseDashboard() {
   const stats = dashboard.data
   const activeTermName = selectedTerm ?? terms[terms.length - 1].term
   const activeTerm = terms.find((t) => t.term === activeTermName) ?? terms[terms.length - 1]
+  const validTerms = [...terms].map((t) => t.term).reverse()
 
   return (
     <div className="flex min-h-screen flex-col bg-qc-grey">
@@ -194,6 +195,7 @@ function CourseDashboard() {
               profName={name}
               courseSubject={subject}
               courseNbr={nbr}
+              validTerms={validTerms}
               reloadKey={reviewsReloadKey}
             />
           </div>
@@ -203,7 +205,7 @@ function CourseDashboard() {
               profName={name}
               courseSubject={subject}
               courseNbr={nbr}
-              validTerms={[...terms].map((t) => t.term).reverse()}
+              validTerms={validTerms}
               onSubmitted={() => setReviewsReloadKey((key) => key + 1)}
             />
           </div>
