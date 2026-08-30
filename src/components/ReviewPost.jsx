@@ -28,7 +28,7 @@ function Stars({ rating }) {
   )
 }
 
-function ReviewPost({ review, isOwner, onEdit }) {
+function ReviewPost({ review, isOwner, onEdit, onDelete }) {
   return (
     <article className="rounded-2xl border border-qc-charcoal/10 bg-white p-5 shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -44,13 +44,22 @@ function ReviewPost({ review, isOwner, onEdit }) {
             <div className="mt-1">{formatDate(review.created_at)}</div>
           </div>
           {isOwner && (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.15em] text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
-            >
-              Edit
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onEdit}
+                className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.15em] text-qc-charcoal/50 underline decoration-qc-charcoal/30 underline-offset-4 transition-colors hover:text-qc-red hover:decoration-qc-red/40 focus-visible:outline-none focus-visible:text-qc-red focus-visible:decoration-qc-red/40"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.15em] text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
+              >
+                Delete
+              </button>
+            </div>
           )}
         </div>
       </div>

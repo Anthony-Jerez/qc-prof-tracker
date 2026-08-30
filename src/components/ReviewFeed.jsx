@@ -80,6 +80,23 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey 
     setHasMore((data?.length ?? 0) === PAGE_SIZE)
   }
 
+  async function handleDelete(reviewId) {
+    const isSure = window.confirm('Are you sure you want to delete this review?')
+    if (!isSure) return
+
+    const { error: deleteError } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', reviewId)
+
+    if (deleteError) {
+      alert('Failed to delete review. Please try again.')
+      return
+    }
+
+    setInternalReloadToken((t) => t + 1)
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -143,6 +160,7 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey 
                 review={review}
                 isOwner={user?.id === review.user_id}
                 onEdit={() => setEditingReviewId(review.id)}
+                onDelete={() => handleDelete(review.id)}
               />
             )
           })}
