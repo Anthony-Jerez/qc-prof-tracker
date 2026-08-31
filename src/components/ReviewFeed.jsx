@@ -41,8 +41,6 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
     // Adding `sort` to the queryKey means React Query will automatically 
     // refetch from page 0 whenever the user changes the sort dropdown.
     queryKey: ['reviews', profName, courseSubject, courseNbr, sort],
-    // Trust the cache for 5 minutes before checking the database again
-    staleTime: 1000 * 60 * 5, 
     queryFn: async ({ pageParam = 0 }) => {
       // Calculate the Supabase offset based on the current page
       const offset = pageParam * PAGE_SIZE
