@@ -1,15 +1,6 @@
 function HeroBand() {
   return (
     <div className="grain relative overflow-hidden bg-qc-charcoal px-6 py-14 sm:py-20">
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden="true"
-        style={{
-          background:
-            'radial-gradient(circle at 15% 0%, rgba(196,18,48,0.28), transparent 55%), radial-gradient(circle at 100% 100%, rgba(255,255,255,0.05), transparent 45%)',
-        }}
-      />
-
       <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
         <svg
           width="52"
@@ -39,10 +30,11 @@ function HeroBand() {
         <h1 className="font-display text-4xl font-semibold tracking-[-0.03em] text-qc-grey sm:text-5xl">
           <span className="text-qc-red">QC</span> Prof Tracker
         </h1>
-        <p className="mt-3 text-base leading-[1.7] text-qc-grey/70 sm:text-lg">
-          Explore grade distributions for{' '}
+        {/* Updated overview text with max-w-xl for better text wrapping */}
+        <p className="mt-3 max-w-xl text-base leading-[1.7] text-qc-grey/70 sm:text-lg">
+          Explore professor stats, GPA trends, and withdrawal rates for{' '}
           <span className="font-semibold text-qc-red">Queens College</span>{' '}
-          courses
+          courses alongside student reviews to build your ideal schedule!
         </p>
       </div>
     </div>

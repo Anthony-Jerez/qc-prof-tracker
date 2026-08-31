@@ -3,24 +3,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useMutation } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
+import StarIcon from './StarIcon'
 
 const UNIQUE_VIOLATION = '23505'
-const STAR_PATH = 'M10 1.5l2.6 5.6 6 .8-4.4 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.4-4.2 6-.8L10 1.5z'
-
-function Star({ filled }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-7 w-7 transition-colors"
-      fill={filled ? '#C41230' : 'none'}
-      stroke={filled ? '#C41230' : '#22222240'}
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path d={STAR_PATH} strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 function StarRatingInput({ value, onChange }) {
   const [hovered, setHovered] = useState(0)
@@ -39,7 +24,8 @@ function StarRatingInput({ value, onChange }) {
           onClick={() => onChange(n)}
           className="rounded-md p-0.5 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-qc-red"
         >
-          <Star filled={(hovered || value) >= n} />
+          {/* Using the new shared component with specific sizing for the form via className*/}
+          <StarIcon filled={(hovered || value) >= n} className="h-7 w-7" />
         </button>
       ))}
     </div>

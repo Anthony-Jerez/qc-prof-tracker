@@ -1,4 +1,4 @@
-const STAR_PATH = 'M10 1.5l2.6 5.6 6 .8-4.4 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.4-4.2 6-.8L10 1.5z'
+import StarIcon from "./StarIcon"
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString('en-US', {
@@ -12,17 +12,7 @@ function Stars({ rating }) {
   return (
     <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <svg
-          key={n}
-          viewBox="0 0 20 20"
-          className="h-3.5 w-3.5"
-          fill={n <= rating ? '#C41230' : 'none'}
-          stroke={n <= rating ? '#C41230' : '#22222235'}
-          strokeWidth={1.5}
-          aria-hidden="true"
-        >
-          <path d={STAR_PATH} strokeLinejoin="round" />
-        </svg>
+        <StarIcon key={n} filled={n <= rating} className="h-3.5 w-3.5" />
       ))}
     </div>
   )

@@ -7,7 +7,7 @@ function HomePage() {
     <div className="flex min-h-screen flex-col bg-white">
       <Header />
       <HeroBand />
-      <main className="flex flex-1 flex-col items-center px-6 py-14 sm:py-20">
+      <main className="flex flex-1 flex-col items-center px-6 pt-14 pb-14 sm:pb-20 lg:pt-10">
         <h2 className="font-display text-2xl font-medium tracking-[-0.03em] text-qc-charcoal sm:text-3xl">
           Find Your Professor
         </h2>

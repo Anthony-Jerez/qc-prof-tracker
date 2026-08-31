@@ -128,7 +128,7 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
 
         {!isLoading && !isError && reviews.length === 0 && (
           <p className="text-sm leading-[1.7] text-qc-charcoal/60">
-            No reviews yet — be the first to share your experience with this course.
+            No reviews yet. Be the first to share your experience with this course!
           </p>
         )}
 

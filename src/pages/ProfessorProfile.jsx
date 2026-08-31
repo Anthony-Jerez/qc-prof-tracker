@@ -85,14 +85,6 @@ function ProfessorProfile() {
           </h1>
 
           <div className="grain relative mt-8 overflow-hidden rounded-3xl bg-qc-charcoal shadow-[0_30px_60px_-20px_rgba(0,0,0,0.45)]">
-            <div
-              className="pointer-events-none absolute inset-0"
-              aria-hidden="true"
-              style={{
-                background:
-                  'radial-gradient(circle at 90% 0%, rgba(196,18,48,0.25), transparent 55%)',
-              }}
-            />
             <div className="relative grid grid-cols-2 divide-y divide-white/10 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
               <StatTile label="Avg GPA" value={formatGpa(stats.avg_gpa)} />
               <StatTile
