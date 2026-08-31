@@ -1,6 +1,6 @@
 function HeroBand() {
   return (
-    <div className="grain relative overflow-hidden bg-qc-charcoal px-6 py-14 sm:py-20">
+    <div className="grain relative overflow-hidden bg-qc-charcoal px-6 py-10 sm:py-14">
       <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
         <svg
           width="52"
@@ -27,14 +27,16 @@ function HeroBand() {
           <circle cx="22" cy="14" r="1.6" fill="#C41230" />
         </svg>
 
-        <h1 className="font-display text-4xl font-semibold tracking-[-0.03em] text-qc-grey sm:text-5xl">
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.03em] text-qc-grey sm:text-4xl">
           <span className="text-qc-red">QC</span> Prof Tracker
         </h1>
         {/* Updated overview text with max-w-xl for better text wrapping */}
-        <p className="mt-3 max-w-xl text-base leading-[1.7] text-qc-grey/70 sm:text-lg">
-          Explore professor stats, GPA trends, and withdrawal rates for{' '}
-          <span className="font-semibold text-qc-red">Queens College</span>{' '}
-          courses alongside student reviews to build your ideal schedule!
+        <p className="mt-3 max-w-xl text-sm leading-[1.7] text-qc-grey/70 sm:text-base">
+          Explore Queens College professor stats alongside student reviews to build
+          your ideal schedule!
+          <span className="mt-1 block text-xs text-qc-grey/50 sm:text-sm">
+            Professor data covers Fall 2021 – Fall 2025.
+          </span>
         </p>
       </div>
     </div>
