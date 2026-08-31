@@ -75,6 +75,8 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
       // Invalidate the cache to instantly refresh the feed.
       // We leave `sort` out of the invalidation key so it refreshes ALL sorts for this course.
       queryClient.invalidateQueries({ queryKey: ['reviews', profName, courseSubject, courseNbr] })
+      // Then, invalidate the cache for my-reviews to refresh the user's personal reviews feed in MyReviewsPage
+      queryClient.invalidateQueries({ queryKey: ['my-reviews'] })
     },
     onError: () => {
       alert('Failed to delete review. Please try again.')
@@ -147,6 +149,7 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
                   onSubmitted={() => {
                     setEditingReviewId(null)
                     queryClient.invalidateQueries({ queryKey: ['reviews', profName, courseSubject, courseNbr] })
+                    queryClient.invalidateQueries({ queryKey: ['my-reviews'] })
                   }}
                   onCancel={() => setEditingReviewId(null)}
                 />

@@ -53,8 +53,7 @@ function ReviewForm({
   const [comment, setComment] = useState(existingReview?.comment ?? '')
   const [term, setTerm] = useState(existingReview?.term ?? validTerms[0] ?? '')
   const [formError, setFormError] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  // deleted manual submitting state
+  // deleted manual submitted and submitting state
 
   // submit mutation
   const submitMutation = useMutation({
@@ -84,12 +83,9 @@ function ReviewForm({
       return data
     },
     onSuccess: (data) => {
+      onSubmitted?.(data)
       if (isEditing) {
-        onSubmitted?.(data)
         onCancel?.()
-      } else {
-        setSubmitted(true)
-        onSubmitted?.(data)
       }
     },
     onError: (error) => {
@@ -125,17 +121,6 @@ function ReviewForm({
             create an account
           </Link>
         </div>
-      </div>
-    )
-  }
-
-  if (submitted) {
-    return (
-      <div className="rounded-2xl border border-qc-charcoal/10 bg-white p-6 text-center shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-8">
-        <span className={fieldLabelClass}>Review posted</span>
-        <p className="mt-3 text-sm leading-[1.7] text-qc-charcoal/70">
-          Thanks for sharing your experience with {courseSubject} {courseNbr}.
-        </p>
       </div>
     )
   }

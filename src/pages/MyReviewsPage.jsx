@@ -46,13 +46,19 @@ function MyReviewsPage() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (reviewId) => {
-      const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+    // Accepts full review object
+    mutationFn: async (review) => {
+      const { error } = await supabase.from('reviews').delete().eq('id', review.id)
       if (error) throw error
     },
-    onSuccess: () => {
-      // Instantly mark the cache as stale so React Query refetches the updated list
+    // The second parameter of onSuccess contains the variable (the review object) we passed to mutate()
+    onSuccess: (_, review) => {
+      // Refresh the personal list
       queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id] })
+      // Refresh the specific public course feed
+      queryClient.invalidateQueries({ 
+        queryKey: ['reviews', review.prof_name, review.course_subject, review.course_nbr] 
+      })
     },
     onError: () => {
       alert('Failed to delete review. Please try again.')
@@ -60,10 +66,10 @@ function MyReviewsPage() {
   })
 
   // can remove async keyword since the delete mutation is a synchronous trigger
-  function handleDelete(reviewId) {
+  function handleDelete(review) {
     const isSure = window.confirm('Are you sure you want to delete this review?')
     if (isSure) {
-      deleteMutation.mutate(reviewId) // trigger delete mutation
+      deleteMutation.mutate(review) // trigger delete mutation
     }
   }
 
@@ -152,7 +158,12 @@ function MyReviewsPage() {
                           existingReview={review}
                           onSubmitted={() => {
                             setEditingReviewId(null)
-                            queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id]}) // invalidate cache to refetch data after user edited review
+                            // Refresh your personal reviews feed
+                            queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id]}) // invalidate cache to refetch data after user edited review and component is mounted
+                            // Refresh the public course feed so changes reflect there too
+                            queryClient.invalidateQueries({ 
+                              queryKey: ['reviews', review.prof_name, review.course_subject, review.course_nbr] 
+                            })
                           }}
                           onCancel={() => setEditingReviewId(null)}
                         />
@@ -164,7 +175,7 @@ function MyReviewsPage() {
                         review={review}
                         isOwner
                         onEdit={() => handleEdit(review)}
-                        onDelete={() => handleDelete(review.id)}
+                        onDelete={() => handleDelete(review)}
                       />
                     )}
                   </div>

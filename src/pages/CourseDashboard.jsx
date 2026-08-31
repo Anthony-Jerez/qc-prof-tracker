@@ -10,7 +10,9 @@ import ReviewForm from '../components/ReviewForm'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 import { useSupabaseRpc } from '../hooks/useSupabaseRpc'
-import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabaseClient'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   describeWithdrawalRate,
   formatCount,
@@ -25,12 +27,34 @@ function CourseDashboard() {
   const nbr = rest.join('-')
   const [selectedTerm, setSelectedTerm] = useState(null)
   const queryClient = useQueryClient()
+  // Bring in the user context
+  const { user } = useAuth()
 
   const dashboard = useSupabaseRpc(
     'get_course_dashboard',
     { p_prof: name, p_subject: subject, p_nbr: nbr },
     [name, subject, nbr],
   )
+
+  // useQuery to check if the user has already posted a review
+  const { data: hasReviewed } = useQuery({
+    // Naming it with this prefix ensures our existing fuzzy match invalidations wipe it automatically
+    queryKey: ['reviews', name, subject, nbr, 'user-status', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('prof_name', name)
+        .eq('course_subject', subject)
+        .eq('course_nbr', nbr)
+        .eq('user_id', user.id)
+        .maybeSingle() // Use maybeSingle so it returns null (not an error) if nothing is found
+      
+      if (error) throw error
+      return !!data // Convert the result to a strict boolean
+    },
+    enabled: !!user // Only run this query if the user is actually logged in
+  })
 
   const withdrawalTrend = useMemo(
     () =>
@@ -193,17 +217,31 @@ function CourseDashboard() {
           </div>
 
           <div className="mt-8">
-            <ReviewForm
-              profName={name}
-              courseSubject={subject}
-              courseNbr={nbr}
-              validTerms={validTerms}
-              onSubmitted={() => {
-                queryClient.invalidateQueries({ 
-                  queryKey: ['reviews', name, subject, nbr] 
-                })
-              }}
-            />
+            {hasReviewed ? (
+              <div className="rounded-2xl border border-qc-charcoal/10 bg-white p-6 text-center shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-8">
+                <span className="font-mono text-[0.65rem] font-medium uppercase tracking-[0.2em] text-qc-red">
+                  Review Posted
+                </span>
+                <p className="mt-3 text-sm leading-[1.7] text-qc-charcoal/70">
+                  You have already reviewed this course. You can edit your review in the feed above or on your account page.
+                </p>
+              </div>
+            ) : (
+              <ReviewForm
+                profName={name}
+                courseSubject={subject}
+                courseNbr={nbr}
+                validTerms={validTerms}
+                onSubmitted={() => {
+                  queryClient.invalidateQueries({ 
+                    queryKey: ['reviews', name, subject, nbr] 
+                  })
+                  queryClient.invalidateQueries({ 
+                    queryKey: ['my-reviews'] 
+                  })
+                }}
+              />
+            )}
           </div>
         </div>
       </main>
