@@ -97,7 +97,11 @@ function ProfessorProfile() {
                 value={formatPercent(stats.withdrawal_rate)}
                 caption={describeWithdrawalRate(stats.withdrawal_rate)}
               />
-              <StatTile label="Students Taught" value={formatCount(stats.total_students)} />
+              <StatTile 
+                label="Students Taught" 
+                value={formatCount(stats.total_students)} 
+                caption="Fall '21 – Fall '25"
+              />
             </div>
           </div>
 
