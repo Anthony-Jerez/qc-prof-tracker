@@ -37,7 +37,11 @@ function SignupPage() {
     } else if (!isQcEmail(form.email)) {
       next.email = `Use your @${QC_EMAIL_DOMAIN} email address.`
     }
-    if (form.password.length < 6) next.password = 'Use at least 6 characters.'
+    if (form.password.length < 12) {
+      next.password = 'Use at least 12 characters.'
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(form.password)) {
+      next.password = 'Must include uppercase, lowercase, a number, and a symbol.'
+    }
     setErrors(next)
     return Object.keys(next).length === 0
   }
