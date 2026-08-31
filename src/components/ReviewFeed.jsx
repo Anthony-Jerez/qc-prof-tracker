@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
 import ReviewForm from './ReviewForm'
@@ -22,80 +23,77 @@ function applySort(query, sort) {
   return query.order('created_at', { ascending: false })
 }
 
-function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey }) {
+function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
   const { user } = useAuth()
   const [sort, setSort] = useState('newest')
-  const [reviews, setReviews] = useState([])
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState(null)
   const [editingReviewId, setEditingReviewId] = useState(null)
-  const [internalReloadToken, setInternalReloadToken] = useState(0)
+  const queryClient = useQueryClient()
 
-  const fetchPage = useCallback(
-    (offset) => {
+  // Infinite query for data fetching, caching, and review pagination
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    // Adding `sort` to the queryKey means React Query will automatically 
+    // refetch from page 0 whenever the user changes the sort dropdown.
+    queryKey: ['reviews', profName, courseSubject, courseNbr, sort],
+    // Trust the cache for 5 minutes before checking the database again
+    staleTime: 1000 * 60 * 5, 
+    queryFn: async ({ pageParam = 0 }) => {
+      // Calculate the Supabase offset based on the current page
+      const offset = pageParam * PAGE_SIZE
       const query = supabase
         .from('reviews')
         .select('*')
         .eq('prof_name', profName)
         .eq('course_subject', courseSubject)
         .eq('course_nbr', courseNbr)
-      return applySort(query, sort).range(offset, offset + PAGE_SIZE - 1)
+      
+      const { data: pageData, error } = await applySort(query, sort).range(offset, offset + PAGE_SIZE - 1)
+      
+      if (error) throw error
+      return pageData
     },
-    [profName, courseSubject, courseNbr, sort],
-  )
+    
+    // Tell React Query how to determine the next page number
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page we fetched has exactly 10 items, there might be more. 
+      // Return the next page index. Otherwise, return undefined to stop.
+      return lastPage?.length === PAGE_SIZE ? allPages.length : undefined
+    },
+  })
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-
-    fetchPage(0).then(({ data, error: fetchError }) => {
-      if (cancelled) return
-      if (fetchError) {
-        setError(fetchError)
-      } else {
-        setReviews(data ?? [])
-        setHasMore((data?.length ?? 0) === PAGE_SIZE)
-      }
-      setLoading(false)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [fetchPage, reloadKey, internalReloadToken])
-
-  async function handleLoadMore() {
-    setLoadingMore(true)
-    const { data, error: fetchError } = await fetchPage(reviews.length)
-    setLoadingMore(false)
-
-    if (fetchError) {
-      setError(fetchError)
-      return
-    }
-    setReviews((prev) => [...prev, ...(data ?? [])])
-    setHasMore((data?.length ?? 0) === PAGE_SIZE)
-  }
-
-  async function handleDelete(reviewId) {
-    const isSure = window.confirm('Are you sure you want to delete this review?')
-    if (!isSure) return
-
-    const { error: deleteError } = await supabase
-      .from('reviews')
-      .delete()
-      .eq('id', reviewId)
-
-    if (deleteError) {
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (reviewId) => {
+      const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      // Invalidate the cache to instantly refresh the feed.
+      // We leave `sort` out of the invalidation key so it refreshes ALL sorts for this course.
+      queryClient.invalidateQueries({ queryKey: ['reviews', profName, courseSubject, courseNbr] })
+    },
+    onError: () => {
       alert('Failed to delete review. Please try again.')
-      return
     }
+  })
 
-    setInternalReloadToken((t) => t + 1)
+  function handleDelete(reviewId) {
+    const isSure = window.confirm('Are you sure you want to delete this review?')
+    if (isSure) {
+      deleteMutation.mutate(reviewId)
+    }
   }
+  
+  // Flattening the pages
+  // `data.pages` is the master array of arrays (e.g. [[page 0], [page 1]]).
+  // We use `flatMap` to merge them into a single list of reviews for rendering.
+  const reviews = data?.pages.flatMap((page) => page) ?? []
 
   return (
     <div>
@@ -122,22 +120,22 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey 
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
-        {loading && <p className="font-mono text-sm text-qc-charcoal/50">Loading reviews…</p>}
+        {isLoading && <p className="font-mono text-sm text-qc-charcoal/50">Loading reviews…</p>}
 
-        {!loading && error && (
+        {!isLoading && isError && (
           <p role="alert" className="text-sm text-qc-red">
             Couldn't load reviews. Please try again.
           </p>
         )}
 
-        {!loading && !error && reviews.length === 0 && (
+        {!isLoading && !isError && reviews.length === 0 && (
           <p className="text-sm leading-[1.7] text-qc-charcoal/60">
             No reviews yet — be the first to share your experience with this course.
           </p>
         )}
 
-        {!loading &&
-          !error &&
+        {!isLoading &&
+          !isError &&
           reviews.map((review) => {
             if (review.id === editingReviewId) {
               return (
@@ -148,7 +146,10 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey 
                   courseNbr={courseNbr}
                   validTerms={validTerms}
                   existingReview={review}
-                  onSubmitted={() => setInternalReloadToken((t) => t + 1)}
+                  onSubmitted={() => {
+                    setEditingReviewId(null)
+                    queryClient.invalidateQueries({ queryKey: ['reviews', profName, courseSubject, courseNbr] })
+                  }}
                   onCancel={() => setEditingReviewId(null)}
                 />
               )
@@ -166,14 +167,14 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms, reloadKey 
           })}
       </div>
 
-      {!loading && !error && hasMore && (
+      {!isLoading && !isError && hasNextPage && (
         <button
           type="button"
-          onClick={handleLoadMore}
-          disabled={loadingMore}
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
           className="mt-6 w-full rounded-lg border border-qc-charcoal/15 bg-white px-4 py-3 font-mono text-sm font-medium text-qc-charcoal transition-colors hover:border-qc-red/40 hover:text-qc-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red disabled:opacity-50"
         >
-          {loadingMore ? 'Loading…' : 'Load More'}
+          {isFetchingNextPage ? 'Loading…' : 'Load More'}
         </button>
       )}
     </div>

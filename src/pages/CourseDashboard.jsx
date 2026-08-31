@@ -10,6 +10,7 @@ import ReviewForm from '../components/ReviewForm'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 import { useSupabaseRpc } from '../hooks/useSupabaseRpc'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   describeWithdrawalRate,
   formatCount,
@@ -23,7 +24,7 @@ function CourseDashboard() {
   const [subject, ...rest] = course.split('-')
   const nbr = rest.join('-')
   const [selectedTerm, setSelectedTerm] = useState(null)
-  const [reviewsReloadKey, setReviewsReloadKey] = useState(0)
+  const queryClient = useQueryClient()
 
   const dashboard = useSupabaseRpc(
     'get_course_dashboard',
@@ -196,7 +197,6 @@ function CourseDashboard() {
               courseSubject={subject}
               courseNbr={nbr}
               validTerms={validTerms}
-              reloadKey={reviewsReloadKey}
             />
           </div>
 
@@ -206,7 +206,11 @@ function CourseDashboard() {
               courseSubject={subject}
               courseNbr={nbr}
               validTerms={validTerms}
-              onSubmitted={() => setReviewsReloadKey((key) => key + 1)}
+              onSubmitted={() => {
+                queryClient.invalidateQueries({ 
+                  queryKey: ['reviews', name, subject, nbr] 
+                })
+              }}
             />
           </div>
         </div>

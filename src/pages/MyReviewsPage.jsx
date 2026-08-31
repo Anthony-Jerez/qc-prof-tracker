@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/Header'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
@@ -11,11 +12,8 @@ import { supabase } from '../lib/supabaseClient'
 function MyReviewsPage() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-
-  const [reviews, setReviews] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [reloadToken, setReloadToken] = useState(0)
+  const queryClient = useQueryClient() // grants access to cache
+  // UI State for editing that we manually manage
   const [editingReviewId, setEditingReviewId] = useState(null)
   const [editingTerms, setEditingTerms] = useState(null)
 
@@ -25,45 +23,48 @@ function MyReviewsPage() {
     }
   }, [authLoading, user, navigate])
 
-  useEffect(() => {
-    if (!user) return
+  // Data fetch
+  const { 
+    data: reviews = [], 
+    isLoading: loading, 
+    error 
+  } = useQuery({
+    queryKey: ['my-reviews', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      return data
+    },
+    // Don't attempt to fetch until we actually have the user's id!
+    enabled: !!user?.id 
+  })
 
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-
-    supabase
-      .from('reviews')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data, error: fetchError }) => {
-        if (cancelled) return
-        if (fetchError) {
-          setError(fetchError)
-        } else {
-          setReviews(data ?? [])
-        }
-        setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, reloadToken])
-
-  async function handleDelete(reviewId) {
-    const isSure = window.confirm('Are you sure you want to delete this review?')
-    if (!isSure) return
-
-    const { error: deleteError } = await supabase.from('reviews').delete().eq('id', reviewId)
-
-    if (deleteError) {
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (reviewId) => {
+      const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      // Instantly mark the cache as stale so React Query refetches the updated list
+      queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id] })
+    },
+    onError: () => {
       alert('Failed to delete review. Please try again.')
-      return
     }
+  })
 
-    setReloadToken((t) => t + 1)
+  // can remove async keyword since the delete mutation is a synchronous trigger
+  function handleDelete(reviewId) {
+    const isSure = window.confirm('Are you sure you want to delete this review?')
+    if (isSure) {
+      deleteMutation.mutate(reviewId) // trigger delete mutation
+    }
   }
 
   async function handleEdit(review) {
@@ -151,7 +152,7 @@ function MyReviewsPage() {
                           existingReview={review}
                           onSubmitted={() => {
                             setEditingReviewId(null)
-                            setReloadToken((t) => t + 1)
+                            queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id]}) // invalidate cache to refetch data after user edited review
                           }}
                           onCancel={() => setEditingReviewId(null)}
                         />

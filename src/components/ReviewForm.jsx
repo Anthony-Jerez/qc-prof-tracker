@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useMutation } from '@tanstack/react-query'
 import { supabase } from '../lib/supabaseClient'
 
 const UNIQUE_VIOLATION = '23505'
@@ -65,10 +66,57 @@ function ReviewForm({
   const [title, setTitle] = useState(existingReview?.title ?? '')
   const [comment, setComment] = useState(existingReview?.comment ?? '')
   const [term, setTerm] = useState(existingReview?.term ?? validTerms[0] ?? '')
-  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  // deleted manual submitting state
 
+  // submit mutation
+  const submitMutation = useMutation({
+    mutationFn: async (payload) => {
+      const { data, error } = isEditing
+        ? await supabase
+            .from('reviews')
+            .update(payload)
+            .eq('id', existingReview.id)
+            .select()
+            .single()
+        : await supabase
+            .from('reviews')
+            .insert({
+              ...payload,
+              prof_name: profName,
+              course_subject: courseSubject,
+              course_nbr: courseNbr,
+              user_id: user.id,
+            })
+            .select()
+            .single()
+
+      // Force the promise to reject if Supabase returns an error object
+      if (error) throw error
+      
+      return data
+    },
+    onSuccess: (data) => {
+      if (isEditing) {
+        onSubmitted?.(data)
+        onCancel?.()
+      } else {
+        setSubmitted(true)
+        onSubmitted?.(data)
+      }
+    },
+    onError: (error) => {
+      if (error.code === UNIQUE_VIOLATION) {
+        setFormError('You have already submitted a review for this course.')
+      } else if (error.message) {
+        setFormError(error.message)
+      } else {
+        setFormError(`Something went wrong ${isEditing ? 'updating' : 'submitting'} your review. Please try again.`)
+      }
+    }
+  })
+  
   if (!user) {
     return (
       <div className="rounded-2xl border border-qc-charcoal/10 bg-white p-6 text-center shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-8">
@@ -106,7 +154,7 @@ function ReviewForm({
     )
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault()
     setFormError('')
 
@@ -124,58 +172,12 @@ function ReviewForm({
       setFormError('Please enter a comment for your review.')
       return
     }
-
-    setSubmitting(true)
-
-    const payload = {
-      rating,
-      title: title.trim(),
-      comment: comment.trim(),
-      term,
-    }
-
-    const { data, error } = isEditing
-      ? await supabase
-          .from('reviews')
-          .update(payload)
-          .eq('id', existingReview.id)
-          .select()
-          .single()
-      : await supabase
-          .from('reviews')
-          .insert({
-            ...payload,
-            prof_name: profName,
-            course_subject: courseSubject,
-            course_nbr: courseNbr,
-            user_id: user.id,
-          })
-          .select()
-          .single()
-
-    setSubmitting(false)
-
-    if (error) {
-      if (error.code === UNIQUE_VIOLATION) {
-        setFormError('You have already submitted a review for this course.');
-      } else if (error.message) {
-        // Display custom trigger exception text
-        setFormError(error.message);
-      } else {
-        setFormError(`Something went wrong ${isEditing ? 'updating' : 'submitting'} your review. Please try again.`);
-      }
-      return;
-    }
-
-    if (isEditing) {
-      onSubmitted?.(data)
-      onCancel?.()
-      return
-    }
-
-    setSubmitted(true)
-    onSubmitted?.(data)
+    
+    const payload = {rating, title: title.trim(), comment: comment.trim(), term}
+    submitMutation.mutate(payload)
   }
+
+  const isPending = submitMutation.isPending
 
   return (
     <div className="rounded-2xl border border-qc-charcoal/10 bg-white p-6 shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-8">
@@ -250,10 +252,10 @@ function ReviewForm({
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isPending}
             className="self-start rounded-lg bg-qc-red px-5 py-2.5 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red/40 disabled:opacity-50"
           >
-            {submitting
+            {isPending
               ? isEditing
                 ? 'Updating…'
                 : 'Posting…'
@@ -265,7 +267,7 @@ function ReviewForm({
             <button
               type="button"
               onClick={onCancel}
-              disabled={submitting}
+              disabled={isPending}
               className="rounded-lg border border-qc-charcoal/15 px-5 py-2.5 font-mono text-sm font-medium text-qc-charcoal transition-colors hover:border-qc-red/40 hover:text-qc-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red disabled:opacity-50"
             >
               Cancel

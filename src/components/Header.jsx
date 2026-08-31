@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
+import { useQueryClient } from '@tanstack/react-query'
 
 function Header() {
   const { user, loading } = useAuth()
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -21,6 +23,7 @@ function Header() {
 
   async function handleSignOut() {
     setOpen(false)
+    queryClient.clear() // empty cache on sign out
     await supabase.auth.signOut()
     navigate('/')
   }

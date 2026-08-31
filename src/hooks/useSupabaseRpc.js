@@ -1,27 +1,15 @@
-import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useQuery } from '@tanstack/react-query'
 
 export function useSupabaseRpc(fn, args, deps) {
-  const [state, setState] = useState({ data: null, loading: true, error: null })
-  const [retryToken, setRetryToken] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function run() {
-      setState({ data: null, loading: true, error: null })
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: [fn, ...deps],
+    queryFn: async () => {
       const { data, error } = await supabase.rpc(fn, args)
-      if (cancelled) return
-      setState(error ? { data: null, loading: false, error } : { data, loading: false, error: null })
+      if (error) throw error
+      return data
     }
+  })
 
-    run()
-
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, retryToken])
-
-  return { ...state, refetch: () => setRetryToken((t) => t + 1) }
+  return { data, loading: isLoading, error, refetch }
 }
