@@ -7,6 +7,8 @@ import { useQueryClient } from '@tanstack/react-query'
 function Header() {
   const { user, loading } = useAuth()
   const [open, setOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const menuRef = useRef(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -24,6 +26,29 @@ function Header() {
   async function handleSignOut() {
     setOpen(false)
     queryClient.clear() // empty cache on sign out
+    await supabase.auth.signOut()
+    navigate('/')
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError('')
+
+    const isSure = window.confirm(
+      'Deleting your account is permanent and cannot be undone. All of your reviews will be removed. Are you sure you want to continue?',
+    )
+    if (!isSure) return
+
+    setDeleting(true)
+    const { error } = await supabase.rpc('delete_user')
+    setDeleting(false)
+
+    if (error) {
+      setDeleteError(error.message)
+      return
+    }
+
+    setOpen(false)
+    queryClient.clear() // empty cache, same as sign out
     await supabase.auth.signOut()
     navigate('/')
   }
@@ -46,7 +71,10 @@ function Header() {
             <>
               <button
                 type="button"
-                onClick={() => setOpen((v) => !v)}
+                onClick={() => {
+                  setOpen((v) => !v)
+                  setDeleteError('')
+                }}
                 aria-expanded={open}
                 className="rounded-full bg-qc-charcoal px-4 py-2 font-mono text-xs font-medium text-qc-grey transition-colors hover:bg-qc-charcoal/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red"
               >
@@ -72,6 +100,22 @@ function Header() {
                   >
                     Sign out
                   </button>
+
+                  <div className="mt-2 border-t border-qc-charcoal/10 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting}
+                      className="w-full rounded-lg bg-qc-red px-2 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red disabled:opacity-50"
+                    >
+                      {deleting ? 'Deleting…' : 'Delete Account'}
+                    </button>
+                    {deleteError && (
+                      <p role="alert" className="mt-2 px-2 text-xs text-qc-red">
+                        {deleteError}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </>
