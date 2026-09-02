@@ -85,6 +85,15 @@ function LoginPage() {
                 required
               />
 
+              <div className="flex justify-end">
+                <Link
+                  to="/forgot-password"
+                  className="font-mono text-xs text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+
               {formError && (
                 <p role="alert" className="text-sm text-qc-red">
                   {formError}
