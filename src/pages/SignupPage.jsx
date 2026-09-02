@@ -9,20 +9,20 @@ import { isQcEmail, QC_EMAIL_DOMAIN } from '../lib/email'
 function SignupPage() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-
+  const [step, setStep] = useState('signup') // tracks the current stage within the multi-step flow
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' })
+  const [otp, setOtp] = useState('')
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-  const [confirmEmailSent, setConfirmEmailSent] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (step === 'signup' && !authLoading && user) {
       navigate('/', { replace: true })
     }
-  }, [authLoading, user, navigate])
+  }, [step, authLoading, user, navigate])
 
-  if (!authLoading && user) return null
+  if (step === 'signup' && !authLoading && user) return null
 
   function updateField(field) {
     return (event) => setForm((f) => ({ ...f, [field]: event.target.value }))
@@ -46,7 +46,7 @@ function SignupPage() {
     return Object.keys(next).length === 0
   }
 
-  async function handleSubmit(event) {
+  async function handleSignupSubmit(event) {
     event.preventDefault()
     setFormError('')
     if (!validate()) return
@@ -73,8 +73,44 @@ function SignupPage() {
     if (data.session) {
       navigate('/', { replace: true })
     } else {
-      setConfirmEmailSent(true)
+      setStep('otp') // switch to use otp
     }
+  }
+
+  async function handleOtpSubmit(event) {
+    event.preventDefault()
+    setFormError('')
+
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setFormError('Enter the 6-digit code from your email.')
+      return
+    }
+
+    setSubmitting(true)
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email: form.email.trim(),
+      token: otp.trim(),
+      type: 'signup',
+    })
+    setSubmitting(false)
+
+    if (verifyError) {
+      setFormError(verifyError.message)
+      return
+    }
+
+    // verifyOtp for signups usually returns a session immediately
+    if (data.session) {
+      navigate('/', { replace: true })
+    } else {
+      setStep('done')
+    }
+  }
+
+  function handleBackToSignup() {
+    setFormError('')
+    setOtp('')
+    setStep('signup')
   }
 
   return (
@@ -91,25 +127,7 @@ function SignupPage() {
             }}
           />
           <div className="relative">
-            {confirmEmailSent ? (
-              <>
-                <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
-                  Almost there
-                </span>
-                <h1 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-qc-grey">
-                  Check your inbox
-                </h1>
-                <p className="mt-4 text-sm leading-[1.7] text-qc-grey/70">
-                  We sent a confirmation link to {form.email}. Confirm your email, then sign in.
-                </p>
-                <Link
-                  to="/login"
-                  className="mt-6 inline-flex font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim"
-                >
-                  ← Back to sign in
-                </Link>
-              </>
-            ) : (
+            {step === 'signup' && (
               <>
                 <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
                   Student sign up
@@ -122,7 +140,7 @@ function SignupPage() {
                   {QC_EMAIL_DOMAIN} email.
                 </p>
 
-                <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-4">
+                <form onSubmit={handleSignupSubmit} noValidate className="mt-8 flex flex-col gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <TextField
                       id="signup-first-name"
@@ -189,6 +207,78 @@ function SignupPage() {
                     Sign in
                   </Link>
                 </p>
+              </>
+            )}
+
+            {step === 'otp' && (
+              <>
+                <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
+                  Check your inbox
+                </span>
+                <h1 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-qc-grey">
+                  Enter your code
+                </h1>
+                <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
+                  We sent a 6-digit code to {form.email}. Enter it below to verify your account.
+                </p>
+
+                <form onSubmit={handleOtpSubmit} noValidate className="mt-8 flex flex-col gap-4">
+                  <TextField
+                    id="signup-otp"
+                    label="Verification Code"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
+                    required
+                  />
+
+                  {formError && (
+                    <p role="alert" className="text-sm text-qc-red">
+                      {formError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="mt-2 w-full rounded-lg bg-qc-red px-4 py-3 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
+                  >
+                    {submitting ? 'Verifying…' : 'Verify account'}
+                  </button>
+                </form>
+                
+                <button
+                  type="button"
+                  onClick={handleBackToSignup}
+                  className="mt-6 font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
+                >
+                  ← Use a different email
+                </button>
+              </>
+            )}
+
+            {step === 'done' && (
+              <>
+                <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
+                  Verified
+                </span>
+                <h1 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-qc-grey">
+                  Account Created
+                </h1>
+                <p className="mt-4 text-sm leading-[1.7] text-qc-grey/70">
+                  Your email has been verified successfully.
+                </p>
+                <Link
+                  to="/login"
+                  className="mt-6 inline-flex font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim"
+                >
+                  ← Go to sign in
+                </Link>
               </>
             )}
           </div>
