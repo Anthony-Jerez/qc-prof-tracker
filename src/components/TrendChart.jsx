@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { CHART_COLORS } from '../lib/constants'
 
 function TrendChart({ title, data, dataKey, valueFormatter, yDomain }) {
   return (
@@ -42,9 +43,9 @@ function TrendChart({ title, data, dataKey, valueFormatter, yDomain }) {
             <Line
               type="monotone"
               dataKey={dataKey}
-              stroke="#C41230"
+              stroke={CHART_COLORS.satisfactory}
               strokeWidth={2.5}
-              dot={{ r: 3, fill: '#C41230', strokeWidth: 0 }}
+              dot={{ r: 3, fill: CHART_COLORS.satisfactory, strokeWidth: 0 }}
               activeDot={{ r: 5 }}
             />
           </LineChart>
