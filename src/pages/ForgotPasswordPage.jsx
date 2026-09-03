@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import TextField from '../components/TextField'
+import OtpForm from '../components/OtpForm'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
-import { isQcEmail, QC_EMAIL_DOMAIN } from '../lib/email'
-
-function validatePassword(password) {
-  if (password.length < 12) return 'Use at least 12 characters.'
-  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(password)) {
-    return 'Must include uppercase, lowercase, a number, and a symbol.'
-  }
-  return ''
-}
+import { 
+  validateEmail, 
+  validatePassword, 
+  validateConfirmPassword, 
+  verifyOtpSubmit 
+} from '../lib/validation'
 
 function ForgotPasswordPage() {
   const { user, loading: authLoading } = useAuth()
@@ -26,9 +24,6 @@ function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Once the recovery code is verified, the client holds an authenticated
-  // session for the rest of this flow — only bounce someone away for
-  // already being logged in before they've started resetting anything.
   useEffect(() => {
     if (step === 'email' && !authLoading && user) {
       navigate('/', { replace: true })
@@ -41,12 +36,9 @@ function ForgotPasswordPage() {
     event.preventDefault()
     setError('')
 
-    if (!email.trim()) {
-      setError('Enter your student email.')
-      return
-    }
-    if (!isQcEmail(email)) {
-      setError(`Use your @${QC_EMAIL_DOMAIN} email address.`)
+    const emailErr = validateEmail(email)
+    if (emailErr) {
+      setError(emailErr)
       return
     }
 
@@ -65,22 +57,13 @@ function ForgotPasswordPage() {
   async function handleOtpSubmit(event) {
     event.preventDefault()
     setError('')
-
-    if (!/^\d{6}$/.test(otp.trim())) {
-      setError('Enter the 6-digit code from your email.')
-      return
-    }
-
     setSubmitting(true)
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: otp.trim(),
-      type: 'recovery',
-    })
+
+    const { error: verifyError } = await verifyOtpSubmit(supabase, email, otp, 'recovery')
     setSubmitting(false)
 
     if (verifyError) {
-      setError(verifyError.message)
+      setError(verifyError)
       return
     }
 
@@ -92,12 +75,10 @@ function ForgotPasswordPage() {
     setError('')
 
     const validationError = validatePassword(newPassword)
-    if (validationError) {
-      setError(validationError)
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.')
+    const matchError = validateConfirmPassword(newPassword, confirmPassword)
+    
+    if (validationError || matchError) {
+      setError(validationError || matchError)
       return
     }
 
@@ -111,12 +92,6 @@ function ForgotPasswordPage() {
     }
 
     setStep('done')
-  }
-
-  function handleBackToEmail() {
-    setError('')
-    setOtp('')
-    setStep('email')
   }
 
   return (
@@ -142,7 +117,7 @@ function ForgotPasswordPage() {
                   Forgot your password?
                 </h1>
                 <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
-                  Enter your Queens College email and we'll send you a 6-digit code.
+                  Enter your Queens College student email and we'll send you a 6-digit code.
                 </p>
 
                 <form onSubmit={handleEmailSubmit} noValidate className="mt-8 flex flex-col gap-4">
@@ -151,7 +126,7 @@ function ForgotPasswordPage() {
                     label="Student Email"
                     type="email"
                     autoComplete="email"
-                    placeholder={`you@${QC_EMAIL_DOMAIN}`}
+                    placeholder="first.last12@qmail.cuny.edu"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     required
@@ -185,55 +160,17 @@ function ForgotPasswordPage() {
             )}
 
             {step === 'otp' && (
-              <>
-                <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
-                  Check your email
-                </span>
-                <h1 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-qc-grey">
-                  Enter your code
-                </h1>
-                <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
-                  We sent a 6-digit code to {email.trim()}. Enter it below to continue.
-                </p>
-
-                <form onSubmit={handleOtpSubmit} noValidate className="mt-8 flex flex-col gap-4">
-                  <TextField
-                    id="forgot-password-otp"
-                    label="Verification Code"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
-                    required
-                  />
-
-                  {error && (
-                    <p role="alert" className="text-sm text-qc-red">
-                      {error}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-2 w-full rounded-lg bg-qc-red px-4 py-3 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
-                  >
-                    {submitting ? 'Verifying…' : 'Verify code'}
-                  </button>
-                </form>
-
-                <button
-                  type="button"
-                  onClick={handleBackToEmail}
-                  className="mt-6 font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
-                >
-                  ← Use a different email
-                </button>
-              </>
+              <OtpForm
+                email={email.trim()}
+                otp={otp}
+                setOtp={setOtp}
+                onSubmit={handleOtpSubmit}
+                error={error}
+                submitting={submitting}
+                onBack={() => { setError(''); setOtp(''); setStep('email'); }}
+                title="Check your email"
+                buttonText="Verify code"
+              />
             )}
 
             {step === 'password' && (
@@ -299,13 +236,13 @@ function ForgotPasswordPage() {
                   Password updated
                 </h1>
                 <p className="mt-4 text-sm leading-[1.7] text-qc-grey/70">
-                  Your password has been changed. You can now sign in with your new password.
+                  Your password has been changed successfully. You are securely signed in and ready to go.
                 </p>
                 <Link
-                  to="/login"
+                  to="/"
                   className="mt-6 inline-flex font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim"
                 >
-                  ← Back to sign in
+                  ← Go to homepage
                 </Link>
               </>
             )}

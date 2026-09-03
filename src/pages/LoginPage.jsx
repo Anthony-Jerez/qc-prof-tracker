@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import TextField from '../components/TextField'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
+import { validateEmail, validatePassword } from '../lib/validation'
 
 function LoginPage() {
   const { user, loading: authLoading } = useAuth()
@@ -25,14 +26,22 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     setFormError('')
-    setSubmitting(true)
 
+    const emailErr = validateEmail(email)
+    const passErr = validatePassword(password)
+
+    if (emailErr || passErr) {
+      setFormError('Invalid email or password.')
+      return
+    }
+
+    setSubmitting(true)
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
-
     setSubmitting(false)
+    
     if (error) {
       setFormError(error.message)
       return
@@ -62,7 +71,7 @@ function LoginPage() {
               Welcome back
             </h1>
             <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
-              Sign in with your Queens College email to leave and manage reviews.
+              Sign in with your Queens College student email to leave and manage reviews.
             </p>
 
             <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-4">

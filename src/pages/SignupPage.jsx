@@ -2,19 +2,27 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import TextField from '../components/TextField'
+import OtpForm from '../components/OtpForm'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabaseClient'
-import { isQcEmail, QC_EMAIL_DOMAIN } from '../lib/email'
+import { 
+  validateEmail, 
+  validatePassword, 
+  validateConfirmPassword, 
+  extractNameFromEmail, 
+  verifyOtpSubmit 
+} from '../lib/validation'
 
 function SignupPage() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-  const [step, setStep] = useState('signup') // tracks the current stage within the multi-step flow
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' })
+  const [step, setStep] = useState('signup')
+
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' })
   const [otp, setOtp] = useState('')
-  const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (step === 'signup' && !authLoading && user) {
@@ -30,18 +38,14 @@ function SignupPage() {
 
   function validate() {
     const next = {}
-    if (!form.firstName.trim()) next.firstName = 'Enter your first name.'
-    if (!form.lastName.trim()) next.lastName = 'Enter your last name.'
-    if (!form.email.trim()) {
-      next.email = 'Enter your student email.'
-    } else if (!isQcEmail(form.email)) {
-      next.email = `Use your @${QC_EMAIL_DOMAIN} email address.`
-    }
-    if (form.password.length < 12) {
-      next.password = 'Use at least 12 characters.'
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(form.password)) {
-      next.password = 'Must include uppercase, lowercase, a number, and a symbol.'
-    }
+    const emailErr = validateEmail(form.email)
+    const passErr = validatePassword(form.password)
+    const confirmErr = validateConfirmPassword(form.password, form.confirmPassword)
+    
+    if (emailErr) next.email = emailErr
+    if (passErr) next.password = passErr
+    if (confirmErr) next.confirmPassword = confirmErr
+
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -52,54 +56,41 @@ function SignupPage() {
     if (!validate()) return
 
     setSubmitting(true)
+    const { firstName, lastName } = extractNameFromEmail(form.email)
+
     const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
       options: {
-        data: { first_name: form.firstName.trim(), last_name: form.lastName.trim() },
+        data: { first_name: firstName, last_name: lastName },
       },
     })
     setSubmitting(false)
 
     if (error) {
-      setFormError(
-        isQcEmail(form.email)
-          ? error.message
-          : `Only Queens College (@${QC_EMAIL_DOMAIN}) email addresses can register.`,
-      )
+      setFormError(error.message)
       return
     }
 
     if (data.session) {
       navigate('/', { replace: true })
     } else {
-      setStep('otp') // switch to use otp
+      setStep('otp')
     }
   }
 
   async function handleOtpSubmit(event) {
     event.preventDefault()
     setFormError('')
-
-    if (!/^\d{6}$/.test(otp.trim())) {
-      setFormError('Enter the 6-digit code from your email.')
-      return
-    }
-
     setSubmitting(true)
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      email: form.email.trim(),
-      token: otp.trim(),
-      type: 'signup',
-    })
+    const { data, error } = await verifyOtpSubmit(supabase, form.email, otp, 'signup')
     setSubmitting(false)
 
-    if (verifyError) {
-      setFormError(verifyError.message)
+    if (error) {
+      setFormError(error)
       return
     }
 
-    // verifyOtp for signups usually returns a session immediately
     if (data.session) {
       navigate('/', { replace: true })
     } else {
@@ -136,37 +127,16 @@ function SignupPage() {
                   Create your account
                 </h1>
                 <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
-                  Reviews are limited to Queens College students — sign up with your @
-                  {QC_EMAIL_DOMAIN} email.
+                  Reviews are limited to Queens College students. Sign up using any student email associated with Queens College.
                 </p>
 
                 <form onSubmit={handleSignupSubmit} noValidate className="mt-8 flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <TextField
-                      id="signup-first-name"
-                      label="First Name"
-                      autoComplete="given-name"
-                      value={form.firstName}
-                      onChange={updateField('firstName')}
-                      error={errors.firstName}
-                      required
-                    />
-                    <TextField
-                      id="signup-last-name"
-                      label="Last Name"
-                      autoComplete="family-name"
-                      value={form.lastName}
-                      onChange={updateField('lastName')}
-                      error={errors.lastName}
-                      required
-                    />
-                  </div>
                   <TextField
                     id="signup-email"
                     label="Student Email"
                     type="email"
                     autoComplete="email"
-                    placeholder={`you@${QC_EMAIL_DOMAIN}`}
+                    placeholder="first.last12@qmail.cuny.edu"
                     value={form.email}
                     onChange={updateField('email')}
                     error={errors.email}
@@ -180,6 +150,16 @@ function SignupPage() {
                     value={form.password}
                     onChange={updateField('password')}
                     error={errors.password}
+                    required
+                  />
+                  <TextField
+                    id="signup-confirm-password"
+                    label="Confirm Password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={form.confirmPassword}
+                    onChange={updateField('confirmPassword')}
+                    error={errors.confirmPassword}
                     required
                   />
 
@@ -211,55 +191,17 @@ function SignupPage() {
             )}
 
             {step === 'otp' && (
-              <>
-                <span className="font-mono text-xs font-medium uppercase tracking-[0.25em] text-qc-red">
-                  Check your inbox
-                </span>
-                <h1 className="mt-4 font-display text-3xl font-medium tracking-[-0.03em] text-qc-grey">
-                  Enter your code
-                </h1>
-                <p className="mt-3 text-sm leading-[1.7] text-qc-grey/70">
-                  We sent a 6-digit code to {form.email}. Enter it below to verify your account.
-                </p>
-
-                <form onSubmit={handleOtpSubmit} noValidate className="mt-8 flex flex-col gap-4">
-                  <TextField
-                    id="signup-otp"
-                    label="Verification Code"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
-                    required
-                  />
-
-                  {formError && (
-                    <p role="alert" className="text-sm text-qc-red">
-                      {formError}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-2 w-full rounded-lg bg-qc-red px-4 py-3 font-mono text-sm font-medium text-white transition-colors hover:bg-qc-red-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
-                  >
-                    {submitting ? 'Verifying…' : 'Verify account'}
-                  </button>
-                </form>
-                
-                <button
-                  type="button"
-                  onClick={handleBackToSignup}
-                  className="mt-6 font-mono text-sm text-qc-red underline decoration-qc-red/40 underline-offset-4 transition-colors hover:text-qc-red-dim focus-visible:outline-none focus-visible:text-qc-red-dim"
-                >
-                  ← Use a different email
-                </button>
-              </>
+              <OtpForm
+                email={form.email.trim()}
+                otp={otp}
+                setOtp={setOtp}
+                onSubmit={handleOtpSubmit}
+                error={formError}
+                submitting={submitting}
+                onBack={handleBackToSignup}
+                title="Check your inbox"
+                buttonText="Verify account"
+              />
             )}
 
             {step === 'done' && (
