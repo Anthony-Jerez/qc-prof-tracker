@@ -1,16 +1,53 @@
-# React + Vite
+# QC Prof Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+QC Prof Tracker is a web application built for Queens College students to make data-driven decisions about their class schedules. It allows students to search for professors, view historical grade distributions, track average GPA and withdrawal trends, and read verified Queens College student reviews. Data currently covers Fall 2021 - Fall 2025.
 
-Currently, two official plugins are available:
+## Video Demo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+[![Watch the video](https://img.youtube.com/vi/3PxZahzB3PU/maxresdefault.jpg)](https://www.youtube.com/watch?v=3PxZahzB3PU)
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Search & Navigation (`/`):** A search bar where users can enter a professor’s properly formatted name (e.g., "WAXMAN, J") to instantly access their data.
+* **Professor Profile (`/prof/:name`):** A professor profile page displaying the professor's overall average GPA, student rating, withdrawal rate, and total students taught (Fall 2021 - Fall 2025), alongside a grid of every unique course they teach.
+* **Course Dashboard (`/prof/:name/:course`):** A course dashboard page showcasing a detailed breakdown matching the selected course and professor.
+  * **Historical Trends:** Features line charts for historical GPA and withdrawal trends across all semesters.
+  * **Semester Drill-down:** Dynamic Recharts bar charts mapping exact grade distribution counts and quick stats (Total Withdrawals, Incompletes, and Enrollment) for a specifically selected term.
+  * **Authenticated Student Reviews:** A secure, paginated review feed where authenticated Queens College students can read and submit specific feedback for a professor's course.
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **Frontend:** React.js (via Vite), JavaScript, HTML, Tailwind CSS
+* **Backend & Database:** Supabase (PostgreSQL, Views, RPCs), Supabase Auth
+* **Data Visualization:** Recharts
+* **State Management & Routing:** React Query, React Router (`react-router-dom`)
+
+## Setup
+
+To run this project locally, you will need Node.js installed and a Supabase project set up with the required database schema.
+
+1. Clone the repository to your local machine.
+2. Run `npm install` to install all required dependencies.
+3. Create a `.env.local` file in the root directory.
+4. Add your Supabase credentials to the environment file:
+   `VITE_SUPABASE_URL=your_supabase_project_url`
+   `VITE_SUPABASE_ANON_KEY=your_supabase_anon_key`
+5. Set up your database by executing the SQL scripts located in the supabase/sql/ directory (run them sequentially from 001 to 005) inside your Supabase SQL editor.
+6. Populate your database using one of two methods:
+   * Quickstart (Use provided data): Simply import the pre-cleaned data/master_grade_distribution.csv file directly into your Supabase database.
+   * Custom Data (Run the data cleaning pipeline): If you have your own raw semester grade distribution files, run the data/data_cleaning.ipynb Jupyter Notebook. This pipeline will clean, validate, and merge your files, outputting a new master_grade_distribution.csv for you to import into Supabase.
+7. Run `npm run dev` to start the local development server.
+
+## Contributing
+
+Contributions are welcome! If you want to add new features or fix a bug, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature (`git checkout -b feature/MyFeature`).
+3. Commit your changes (`git commit -m 'Add MyFeature'`).
+4. Push to the branch (`git push origin feature/MyFeature`).
+5. Open a Pull Request.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
