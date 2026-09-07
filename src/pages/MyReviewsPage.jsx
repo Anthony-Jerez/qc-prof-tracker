@@ -57,7 +57,7 @@ function MyReviewsPage() {
       queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id] })
       // Refresh the specific public course feed
       queryClient.invalidateQueries({ 
-        queryKey: ['reviews', review.prof_name, review.course_subject, review.course_nbr] 
+        queryKey: ['reviews', review.prof_name, review.course_subject, review.course_number] 
       })
     },
     onError: () => {
@@ -80,9 +80,9 @@ function MyReviewsPage() {
     const { data, error: termsError } = await supabase
       .from('course_term_stats')
       .select('term')
-      .eq('prof', review.prof_name)
-      .eq('subject', review.course_subject)
-      .eq('nbr', review.course_nbr)
+      .eq('prof_name', review.prof_name)
+      .eq('course_subject', review.course_subject)
+      .eq('course_number', review.course_number)
       .order('term_sort', { ascending: false })
 
     setEditingTerms(termsError || !data?.length ? [review.term] : data.map((row) => row.term))
@@ -136,8 +136,8 @@ function MyReviewsPage() {
             {!loading &&
               !error &&
               reviews.map((review) => {
-                const courseHref = `/prof/${encodeURIComponent(review.prof_name)}/${review.course_subject}-${review.course_nbr}`
-                const courseLabel = `${review.course_subject} ${review.course_nbr} · ${review.prof_name}`
+                const courseHref = `/prof/${encodeURIComponent(review.prof_name)}/${review.course_subject}-${review.course_number}`
+                const courseLabel = `${review.course_subject} ${review.course_number} · ${review.prof_name}`
 
                 return (
                   <div key={review.id} className="flex flex-col gap-3">
@@ -153,7 +153,7 @@ function MyReviewsPage() {
                         <ReviewForm
                           profName={review.prof_name}
                           courseSubject={review.course_subject}
-                          courseNbr={review.course_nbr}
+                          courseNbr={review.course_number}
                           validTerms={editingTerms}
                           existingReview={review}
                           onSubmitted={() => {
@@ -162,7 +162,7 @@ function MyReviewsPage() {
                             queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id]}) // invalidate cache to refetch data after user edited review and component is mounted
                             // Refresh the public course feed so changes reflect there too
                             queryClient.invalidateQueries({ 
-                              queryKey: ['reviews', review.prof_name, review.course_subject, review.course_nbr] 
+                              queryKey: ['reviews', review.prof_name, review.course_subject, review.course_number] 
                             })
                           }}
                           onCancel={() => setEditingReviewId(null)}

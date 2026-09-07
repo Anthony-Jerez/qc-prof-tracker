@@ -16,8 +16,8 @@ import {
 function ProfessorProfile() {
   const { name } = useParams()
 
-  const overview = useSupabaseRpc('get_professor_overview', { p_prof: name }, [name])
-  const courses = useSupabaseRpc('get_professor_courses', { p_prof: name }, [name])
+  const overview = useSupabaseRpc('get_professor_overview', { p_prof_name: name }, [name])
+  const courses = useSupabaseRpc('get_professor_courses', { p_prof_name: name }, [name])
 
   if (overview.loading || courses.loading) {
     return (
@@ -99,7 +99,7 @@ function ProfessorProfile() {
               />
               <StatTile 
                 label="Students Taught" 
-                value={formatCount(stats.total_students)} 
+                value={formatCount(stats.total_enrollment)} 
                 caption="Fall '21 – Fall '25"
               />
             </div>
@@ -116,16 +116,16 @@ function ProfessorProfile() {
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {courseList.map((course) => (
                 <CourseCard
-                  key={`${course.subject}-${course.nbr}`}
+                  key={`${course.course_subject}-${course.course_number}`}
                   profName={name}
                   course={{
-                    subject: course.subject,
-                    nbr: course.nbr,
+                    courseSubject: course.course_subject,
+                    courseNumber: course.course_number,
                     courseName: course.course_name,
                     avgGpa: course.avg_gpa,
                     rating: course.rating,
                     lastTerm: course.last_term,
-                    totalEnrollments: course.total_students,
+                    totalEnrollment: course.total_enrollment,
                   }}
                 />
               ))}

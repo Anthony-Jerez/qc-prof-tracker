@@ -71,7 +71,7 @@ function ReviewForm({
               ...payload,
               prof_name: profName,
               course_subject: courseSubject,
-              course_nbr: courseNbr,
+              course_number: courseNbr,
               user_id: user.id,
             })
             .select()

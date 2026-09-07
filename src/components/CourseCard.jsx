@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { formatGpa, formatRating, formatCount } from '../lib/format'
 
 function CourseCard({ profName, course }) {
-  const slug = `${course.subject}-${course.nbr}`
+  const slug = `${course.courseSubject}-${course.courseNumber}`
 
   return (
     <Link
@@ -10,7 +10,7 @@ function CourseCard({ profName, course }) {
       className="group relative flex flex-col overflow-hidden rounded-2xl bg-qc-charcoal p-6 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.5)] transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-qc-red"
     >
       <span className="font-mono text-xs font-medium uppercase tracking-[0.15em] text-qc-red">
-        {course.subject} {course.nbr}
+        {course.courseSubject} {course.courseNumber}
       </span>
       <h3 className="mt-2 text-lg font-semibold leading-snug text-qc-grey">
         {course.courseName}
@@ -46,7 +46,7 @@ function CourseCard({ profName, course }) {
             Total Enrolled
           </span>
           <span className="font-mono text-xl text-qc-grey">
-            {formatCount(course.totalEnrollments)}
+            {formatCount(course.totalEnrollment)}
           </span>
         </div>
       </div>

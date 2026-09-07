@@ -32,7 +32,7 @@ function CourseDashboard() {
 
   const dashboard = useSupabaseRpc(
     'get_course_dashboard',
-    { p_prof: name, p_subject: subject, p_nbr: nbr },
+    { p_prof_name: name, p_course_subject: subject, p_course_number: nbr },
     [name, subject, nbr],
   )
 
@@ -46,7 +46,7 @@ function CourseDashboard() {
         .select('id')
         .eq('prof_name', name)
         .eq('course_subject', subject)
-        .eq('course_nbr', nbr)
+        .eq('course_number', nbr)
         .eq('user_id', user.id)
         .maybeSingle() // Use maybeSingle so it returns null (not an error) if nothing is found
       
@@ -195,7 +195,7 @@ function CourseDashboard() {
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <StatCard label="Withdrawals" value={formatCount(activeTerm.w)} />
             <StatCard label="Incompletes" value={formatCount(activeTerm.inc)} />
-            <StatCard label="Total Enrollment" value={formatCount(activeTerm.total)} />
+            <StatCard label="Total Enrollment" value={formatCount(activeTerm.total_enrollment)} />
           </div>
 
           <div className="mt-6 rounded-2xl border border-qc-charcoal/10 bg-white p-5 shadow-[0_16px_32px_-20px_rgba(34,34,34,0.25)] sm:p-6">

@@ -49,7 +49,7 @@ function ReviewFeed({ profName, courseSubject, courseNbr, validTerms }) {
         .select('*')
         .eq('prof_name', profName)
         .eq('course_subject', courseSubject)
-        .eq('course_nbr', courseNbr)
+        .eq('course_number', courseNbr)
       
       const { data: pageData, error } = await applySort(query, sort).range(offset, offset + PAGE_SIZE - 1)
       
