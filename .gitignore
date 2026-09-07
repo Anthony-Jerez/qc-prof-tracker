@@ -26,4 +26,3 @@ dist-ssr
 .env
 .claude
 CLAUDE.md
-supabase
