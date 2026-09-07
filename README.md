@@ -4,7 +4,7 @@ QC Prof Tracker is a web application built for Queens College students to make d
 
 ## Video Demo
 
-[![Watch the video](https://img.youtube.com/vi/3PxZahzB3PU/maxresdefault.jpg)](https://www.youtube.com/watch?v=3PxZahzB3PU)
+[![Watch the demo video](https://img.youtube.com/vi/NCn0ZpeKUWQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=NCn0ZpeKUWQ)
 
 ## Features
 
