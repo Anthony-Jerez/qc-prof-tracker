@@ -15,6 +15,11 @@ QC Prof Tracker is a web application built for Queens College students to make d
   * **Semester Drill-down:** Dynamic Recharts bar charts mapping exact grade distribution counts and quick stats (Total Withdrawals, Incompletes, and Enrollment) for a specifically selected term.
   * **Authenticated Student Reviews:** A secure, paginated review feed where authenticated Queens College students can read and submit specific feedback for a professor's course.
 
+## Upcoming Features
+
+* **Pre-Submission AI Review Screening:** Automated semantic analysis running prior to submission to evaluate review sentiment and flag policy violations.
+* **Community Review Moderation:** A additional layer of moderation featuring a user reporting system enabling students to flag reviews containing inappropriate language, personally identifiable information, defamation, or spam.
+
 ## Tech Stack
 
 * **Frontend:** React.js (via Vite), JavaScript, HTML, Tailwind CSS
