@@ -38,7 +38,7 @@ To run this project locally, you will need Node.js installed and a Supabase proj
    `VITE_SUPABASE_URL=your_supabase_project_url`
    `VITE_SUPABASE_ANON_KEY=your_supabase_anon_key`
 5. Set up your database by executing the SQL scripts located in the supabase/sql/ directory (run them sequentially from 001 to 005) inside your Supabase SQL editor.
-6. Populate your database by simply importing the pre-cleaned data/master_grade_distribution.csv file directly into your Supabase database.
+6. Populate your database by importing the pre-cleaned data/master_grade_distribution.csv file directly into your Supabase database.
 7. Run `npm run dev` to start the local development server.
 
 ## Contributing
